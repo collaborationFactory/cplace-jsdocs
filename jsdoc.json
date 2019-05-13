@@ -5,7 +5,7 @@
   },
   "plugins": [
     "plugins/markdown",
-    "./template/category"
+    "node_modules/better-docs/category"
   ],
   "source": {
     "include": [
@@ -25,16 +25,14 @@
     ],
     "footerText": "cplaceJS API - Copyright 2018, collaboration Factory AG. All rights reserved.",
     "logo": {
-      "url": "cplace.png",
-      "width": "70px",
-      "height": "70px",
+      "url": "cplaceJs.png",
+      "width": "220px",
       "link": "index.html"
     },
     "better-docs": {
-      "name": "cplaceJS API",
       "navigation": [
         {
-          "label": "Imprint",
+          "label": "Impressum - Legal disclosure",
           "href": "imprint.html"
         },
         {
@@ -52,9 +50,8 @@
     "encoding": "utf8",
     "private": true,
     "recurse": true,
-    "readme": "README.md",
     "tutorials": "examples",
-    "template": "./template",
+    "template": "node_modules/better-docs",
     "destination": "./out"
   }
 }

@@ -69,3 +69,77 @@
 .footer .generated-on {
     font-size: 10px;
 }
+
+
+h1.navbar-item {
+    display: none !important;
+}
+
+.logo img {
+    width: auto;
+    position: relative;
+    top: 9px;
+}
+
+.top-navbar {
+    background: white;
+    padding: 6px 0;
+}
+
+.top-navbar {
+    box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.25);
+    height: 60px;
+    margin-bottom: 3rem;
+}
+
+.navbar-menu, .navbar, .navbar-brand {
+    background: transparent !important;
+}
+
+h1.navbar-item {
+    color: red !important;
+}
+
+@media screen and (max-width: 670px) {
+    .logo:before {
+        content: "jsdoc.cplace.io";
+        padding: 20px;
+        font-weight: 600;
+        font-size: 2em;
+    }
+
+    .logo img {
+        display: none;
+    }
+}
+
+html, body {
+    height: 100%;
+}
+
+body > .container {
+    min-height: 100%;
+}
+
+body > .container > .columns {
+    overflow: auto;
+    padding-bottom: 150px; /* this needs to be bigger than footer height*/
+}
+
+footer.footer {
+    position: relative;
+    margin-top: -150px; /* negative value of footer height */
+    height: 150px;
+    clear: both;
+    padding-top: 20px;
+    background: #5b626c;
+}
+
+.top-navbar .navbar-item a, .top-navbar .navbar-burger a, .top-navbar .navbar-item, .top-navbar .navbar-burger {
+    color: #C3C2C5;
+    font-weight: bold;
+}
+
+div#sidebarNav {
+    box-shadow: 0 0 20px rgba(46, 72, 88, .1);
+}

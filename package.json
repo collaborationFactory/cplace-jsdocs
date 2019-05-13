@@ -21,5 +21,8 @@
   "bugs": {
     "url": "https://github.com/collaborationFactory/cplace-jsdocs/issues"
   },
-  "homepage": "https://github.com/collaborationFactory/cplace-jsdocs#readme"
+  "homepage": "https://github.com/collaborationFactory/cplace-jsdocs#readme",
+  "devDependencies": {
+    "better-docs": "github:collaborationFactory/better-docs#template-for-cplacejs-docs"
+  }
 }
