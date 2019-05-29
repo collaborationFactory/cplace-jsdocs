@@ -3,6 +3,7 @@
  *
  * Some overrides for TUI JSDoc template CSS. Add changes to styles here.
  */
+
 .main section article table td.name,
 .main section article table td.type,
 .main section article table td.attributes,
@@ -114,7 +115,12 @@ h1.navbar-item {
 }
 
 html, body {
+    font-family: "Open Sans", "Muli",sans-serif;    
     height: 100%;
+}
+
+.content header.page-title h1 {
+    font-family: "Muli",sans-serif;        
 }
 
 body > .container {
@@ -141,5 +147,5 @@ footer.footer {
 }
 
 div#sidebarNav {
-    box-shadow: 0 0 20px rgba(46, 72, 88, .1);
+    box-shadow: inset -27px -22px 35px -50px rgba(0,0,0,0.75);
 }
