@@ -1,0 +1,24 @@
+{
+    "compilerOptions": {
+        "rootDir": "src",
+        "target": "es2016",
+        "lib": [
+            "es2016",
+            "dom",
+            "es2017.string"
+        ],
+        "module": "commonjs",
+        "esModuleInterop": true,
+        "strict": true,
+        "noImplicitAny": false,
+        "declaration": false,
+        "declarationMap": false,
+        "sourceMap": false,
+        "outDir": "./dist"
+    },
+    "include": [
+        "**/*.ts"
+    ],
+    "compileOnSave": true
+}
+
