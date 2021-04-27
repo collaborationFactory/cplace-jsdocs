@@ -73,10 +73,6 @@ function run() {
         destination: cli.flags.out || '',
     };
 
-    config.repos = '/Users/pragatisureka/software/collaboration-factory/repos';
-    config.destination = '/Users/pragatisureka/jsdocs';
-    config.debug = true;
-
     try {
         const docsBuilder = new CplaceJSDocs(config);
         process.on('SIGTERM', () => {
