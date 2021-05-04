@@ -33,9 +33,9 @@ export function groupData(templateData: Array<any>): IEntityGroups {
 }
 
 export function generateLinks(pluginShortName: string, groups: IEntityGroups) {
-    groups.clazz.forEach(value => entityToLink.set(value, `/${linkBase}/api/${pluginShortName}/s${value.toLowerCase()}`));
+    groups.clazz.forEach(value => entityToLink.set(value, `/${linkBase}/${pluginShortName}/s${value.toLowerCase()}`));
     groups.typedef.forEach(value => {
-        entityToLink.set(value, `/${linkBase}/api/${pluginShortName}/${typeDefSlug}#${value.toLocaleLowerCase()}`);
+        entityToLink.set(value, `/${linkBase}/${pluginShortName}/${typeDefSlug}#${value.toLocaleLowerCase()}`);
     });
     // console.log(entityToLink.forEach((val, key) => console.log(key, val)));
 }

@@ -26,9 +26,9 @@ function groupData(templateData) {
 }
 exports.groupData = groupData;
 function generateLinks(pluginShortName, groups) {
-    groups.clazz.forEach(value => entityToLink.set(value, `/${constants_1.linkBase}/api/${pluginShortName}/s${value.toLowerCase()}`));
+    groups.clazz.forEach(value => entityToLink.set(value, `/${constants_1.linkBase}/${pluginShortName}/s${value.toLowerCase()}`));
     groups.typedef.forEach(value => {
-        entityToLink.set(value, `/${constants_1.linkBase}/api/${pluginShortName}/${constants_1.typeDefSlug}#${value.toLocaleLowerCase()}`);
+        entityToLink.set(value, `/${constants_1.linkBase}/${pluginShortName}/${constants_1.typeDefSlug}#${value.toLocaleLowerCase()}`);
     });
     // console.log(entityToLink.forEach((val, key) => console.log(key, val)));
 }
