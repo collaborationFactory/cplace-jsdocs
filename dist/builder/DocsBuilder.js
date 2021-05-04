@@ -43,6 +43,7 @@ const jsdoc_to_markdown_1 = __importDefault(require("jsdoc-to-markdown"));
 const tmpl_class_1 = __importDefault(require("../dmd-ext/templates/tmpl-class"));
 const tmpl_namespace_1 = __importDefault(require("../dmd-ext/templates/tmpl-namespace"));
 const tmpl_typedef_1 = __importDefault(require("../dmd-ext/templates/tmpl-typedef"));
+const tmpl_fromtMatter_1 = __importDefault(require("../dmd-ext/templates/tmpl-fromtMatter"));
 const BuilderUtils_1 = require("./BuilderUtils");
 require("../dmd-ext/helper/helpers");
 class DocsBuilder {
@@ -50,35 +51,24 @@ class DocsBuilder {
         this.plugins = plugins;
         this.destination = destination;
         this.workingDir = DocsBuilder.createTemporaryWorkingDir();
-    }
-    static createTemporaryWorkingDir() {
-        const osTempDir = os.tmpdir();
-        const tmpDir = path.join(osTempDir, 'cplaceJS-docs-builder');
-        rimraf.sync(tmpDir);
-        fs.mkdirSync(tmpDir);
-        utils_1.debug(`Using temp directory ${tmpDir}`);
-        return tmpDir;
+        if (!this.destination) {
+            this.destination = path.join(this.workingDir, 'out');
+        }
     }
     start() {
         return __awaiter(this, void 0, void 0, function* () {
+            fs_extra_1.ensureDirSync(this.destination);
             console.log('Collecting docs from plugins...');
             this.copyDocsFromPlugins();
-            let destinationPath = path.join(this.workingDir, 'out');
-            if (this.destination) {
-                destinationPath = this.destination;
-            }
-            fs_extra_1.ensureDirSync(destinationPath);
             const docsSource = this.getAllDocsPaths();
             Object.keys(docsSource).forEach((plugin) => {
                 const pathsForJsdoc = {
                     cplacePlugin: plugin,
                     sourceDir: docsSource[plugin],
                     jsdocPlugin: require.resolve('../lib/cplaceJsdocPlugin'),
-                    out: destinationPath,
                 };
                 this.buildForPlugin(plugin, pathsForJsdoc);
             });
-            console.log('Docs generated in folder: ' + destinationPath);
         });
     }
     buildForPlugin(plugin, jsdocPaths) {
@@ -86,8 +76,15 @@ class DocsBuilder {
         if (!DocsBuilder.containsJsFiles(path.join(jsdocPaths.sourceDir, 'docs'))) {
             return;
         }
-        const outputPath = path.join(jsdocPaths.out, 'api', plugin);
+        let metaData = DocsBuilder.getMetaData(jsdocPaths.sourceDir, plugin);
+        if (!metaData.displayName) {
+            console.error(`(CplaceJSDocs) Incorrect meta data cannot build docs for ${plugin}`);
+            return;
+        }
+        const outputPath = path.join(this.destination, plugin.replace(/\W+/gi, '-').toLowerCase());
         fs_extra_1.mkdirpSync(outputPath);
+        const pluginFm = tmpl_fromtMatter_1.default(metaData.displayName);
+        fs_extra_1.outputFileSync(path.join(outputPath, '_index.md'), pluginFm);
         let docsData = jsdoc_to_markdown_1.default.getTemplateDataSync({
             'no-cache': true,
             files: path.join(jsdocPaths.sourceDir, 'docs', '/**/*.js'),
@@ -103,7 +100,7 @@ class DocsBuilder {
             const templateClosure = DocsBuilder.getTemplateClosure(group);
             for (const entry of groups[group]) {
                 const template = templateClosure(entry);
-                utils_1.debug(`rendering ${entry}, template: ${template}`);
+                utils_1.debug(`rendering ${entry}`);
                 const output = jsdoc_to_markdown_1.default.renderSync({
                     data: docsData,
                     template: template,
@@ -121,10 +118,11 @@ class DocsBuilder {
             template: template,
         });
         fs.writeFileSync(path.resolve(outputPath, 'helper-types.md'), output);
+        console.log('Docs generated in folder: ' + outputPath);
     }
     copyDocsFromPlugins() {
         this.plugins.forEach((pluginPath, pluginName) => {
-            fs_extra_1.copySync(path.join(pluginPath, 'assets', 'cplaceJS'), path.join(this.workingDir, 'allDocs', pluginName));
+            fs_extra_1.copySync(path.join(pluginPath, 'assets', 'cplaceJS'), path.join(this.workingDir, DocsBuilder.allDocsDir, pluginName));
         });
     }
     static containsJsFiles(dir) {
@@ -153,6 +151,21 @@ class DocsBuilder {
         }
         return docsPaths;
     }
+    static getMetaData(dir, plugin) {
+        const file = path.resolve(dir, 'manifest.json');
+        let data;
+        if (fs.existsSync(file)) {
+            data = JSON.parse(fs.readFileSync(file, 'utf-8'));
+        }
+        if (!data || !data.displayName) {
+            const shortName = plugin.split('.').pop();
+            data = {
+                pluginShortName: shortName || shortName,
+                displayName: shortName || shortName,
+            };
+        }
+        return data;
+    }
     static getTemplateClosure(type) {
         switch (type) {
             case 'clazz':
@@ -167,5 +180,14 @@ class DocsBuilder {
                 };
         }
     }
+    static createTemporaryWorkingDir() {
+        const osTempDir = os.tmpdir();
+        const tmpDir = path.join(osTempDir, 'cplacejs-docs-builder');
+        rimraf.sync(tmpDir);
+        fs.mkdirSync(tmpDir);
+        utils_1.debug(`Using temp directory ${tmpDir}`);
+        return tmpDir;
+    }
 }
 exports.default = DocsBuilder;
+DocsBuilder.allDocsDir = 'allDocs';
