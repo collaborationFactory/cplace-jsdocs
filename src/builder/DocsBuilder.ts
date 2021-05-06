@@ -57,7 +57,6 @@ export default class DocsBuilder {
         }
 
         let metaData: PluginMetaData = DocsBuilder.getMetaData(jsdocPaths.sourceDir, plugin);
-
         if (!metaData.displayName) {
             console.error(`(CplaceJSDocs) Incorrect meta data cannot build docs for ${plugin}`);
             return;
@@ -101,15 +100,16 @@ export default class DocsBuilder {
         });
 
         // do it for global typedefs
-        const templateClosure = DocsBuilder.getTemplateClosure('typedef');
-        const template = templateClosure('Helper types');
-        const output = jsdoc2md.renderSync({
-            data: docsData,
-            helper: require.resolve('../dmd-ext/helper/helpers'),
-            template: template,
-        });
-        fs.writeFileSync(path.resolve(outputPath, 'helper-types.md'), output);
-
+        if(groups.typedef.size) {
+            const templateClosure = DocsBuilder.getTemplateClosure('typedef');
+            const template = templateClosure('Helper types');
+            const output = jsdoc2md.renderSync({
+                data: docsData,
+                helper: require.resolve('../dmd-ext/helper/helpers'),
+                template: template,
+            });
+            fs.writeFileSync(path.resolve(outputPath, 'helper-types.md'), output);
+        }
         console.log('Docs generated in folder: ' + outputPath);
     }
 
@@ -161,8 +161,8 @@ export default class DocsBuilder {
         if (!data || !data.displayName) {
             const shortName = plugin.split('.').pop();
             data = {
-                pluginShortName: shortName || shortName,
-                displayName: shortName || shortName,
+                pluginShortName: shortName,
+                displayName: shortName,
             }
         }
 

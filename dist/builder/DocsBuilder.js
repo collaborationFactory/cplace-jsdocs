@@ -112,14 +112,16 @@ class DocsBuilder {
             }
         });
         // do it for global typedefs
-        const templateClosure = DocsBuilder.getTemplateClosure('typedef');
-        const template = templateClosure('Helper types');
-        const output = jsdoc_to_markdown_1.default.renderSync({
-            data: docsData,
-            helper: require.resolve('../dmd-ext/helper/helpers'),
-            template: template,
-        });
-        fs.writeFileSync(path.resolve(outputPath, 'helper-types.md'), output);
+        if (groups.typedef.size) {
+            const templateClosure = DocsBuilder.getTemplateClosure('typedef');
+            const template = templateClosure('Helper types');
+            const output = jsdoc_to_markdown_1.default.renderSync({
+                data: docsData,
+                helper: require.resolve('../dmd-ext/helper/helpers'),
+                template: template,
+            });
+            fs.writeFileSync(path.resolve(outputPath, 'helper-types.md'), output);
+        }
         console.log('Docs generated in folder: ' + outputPath);
     }
     copyDocsFromPlugins() {
@@ -162,8 +164,8 @@ class DocsBuilder {
         if (!data || !data.displayName) {
             const shortName = plugin.split('.').pop();
             data = {
-                pluginShortName: shortName || shortName,
-                displayName: shortName || shortName,
+                pluginShortName: shortName,
+                displayName: shortName,
             };
         }
         return data;
