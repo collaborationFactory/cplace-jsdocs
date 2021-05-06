@@ -94,7 +94,9 @@ export default class DocsBuilder {
                     template: template,
                     helper: require.resolve('../dmd-ext/helper/helpers'),
                 });
-                fs.writeFileSync(path.resolve(outputPath, `${entry.toLowerCase()}.md`), output);
+                const filePath = path.resolve(outputPath, `${entry.toLowerCase()}.md`);
+                fs.writeFileSync(filePath, output);
+                debug(`Written file:  ${filePath}`);
             }
         });
 
