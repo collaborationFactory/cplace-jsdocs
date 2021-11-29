@@ -33,9 +33,10 @@ export function groupData(templateData: Array<any>): IEntityGroups {
 }
 
 export function generateLinks(pluginShortName: string, groups: IEntityGroups) {
-    groups.clazz.forEach(value => entityToLink.set(value, `/${linkBase}/${pluginShortName}/s${value.toLowerCase()}`));
+    let pluginShortNameAdapted = pluginShortName.replace(/[.]/g, '-').toLowerCase();
+    groups.clazz.forEach(value => entityToLink.set(value, `/${linkBase}/${pluginShortNameAdapted}/${value.toLowerCase()}`));
     groups.typedef.forEach(value => {
-        entityToLink.set(value, `/${linkBase}/${pluginShortName}/${typeDefSlug}#${value.toLocaleLowerCase()}`);
+        entityToLink.set(value, `/${linkBase}/${pluginShortNameAdapted}/${typeDefSlug}#${value.toLocaleLowerCase()}`);
     });
     // console.log(entityToLink.forEach((val, key) => console.log(key, val)));
 }
