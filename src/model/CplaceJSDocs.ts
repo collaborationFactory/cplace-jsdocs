@@ -127,6 +127,11 @@ export class CplaceJSDocs {
 
     private static pluginHasCplaceJSDocs(pluginPath: string): boolean {
         const docsPath = path.join(pluginPath, 'assets', 'cplaceJS');
-        return fs.existsSync(docsPath) && fs.lstatSync(docsPath).isDirectory();
+        let hasCplaceJSDocs = fs.existsSync(docsPath) && fs.lstatSync(docsPath).isDirectory();
+        if (!hasCplaceJSDocs) {
+            const alternativeDocsPath = path.join(pluginPath, 'src', 'main', 'resources', 'cplaceJS');
+            hasCplaceJSDocs = fs.existsSync(alternativeDocsPath) && fs.lstatSync(alternativeDocsPath).isDirectory();
+        }
+        return hasCplaceJSDocs;
     }
 }

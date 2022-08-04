@@ -41,7 +41,7 @@ class CplaceJSDocs {
     constructor(buildConfig) {
         this.buildConfig = buildConfig;
         if (buildConfig.debug) {
-            utils_1.enableDebug();
+            (0, utils_1.enableDebug)();
         }
         this.plugins = this.setup();
     }
@@ -53,7 +53,7 @@ class CplaceJSDocs {
             }
             const mainRepoPath = this.getMainRepoPath();
             if (mainRepoPath === null) {
-                utils_1.debug(`(CplaceJSDocs) Main repo cannot be found...`);
+                (0, utils_1.debug)(`(CplaceJSDocs) Main repo cannot be found...`);
                 return new Promise((resolve, reject) => reject('Main repo cannot be found...'));
             }
             const startTime = new Date().getTime();
@@ -62,7 +62,7 @@ class CplaceJSDocs {
             docsBuilder.start()
                 .then(() => {
                 const endTime = new Date().getTime();
-                console.log(`CplaceJS docs built successfully (${formatting_1.formatDuration(endTime - startTime)})`);
+                console.log(`CplaceJS docs built successfully (${(0, formatting_1.formatDuration)(endTime - startTime)})`);
             });
         });
     }
@@ -74,7 +74,7 @@ class CplaceJSDocs {
             console.error(`(CplaceJSDocs) Main repo cannot be found...`);
             process.exit(1);
         }
-        utils_1.debug(`(CplaceJSDocs) Building cplaceJS docs for all repos... `);
+        (0, utils_1.debug)(`(CplaceJSDocs) Building cplaceJS docs for all repos... `);
         repoPaths = this.getAllPotentialRepos();
         repoPaths.forEach(repoPath => {
             const files = fs.readdirSync(repoPath);
@@ -125,7 +125,12 @@ class CplaceJSDocs {
     }
     static pluginHasCplaceJSDocs(pluginPath) {
         const docsPath = path.join(pluginPath, 'assets', 'cplaceJS');
-        return fs.existsSync(docsPath) && fs.lstatSync(docsPath).isDirectory();
+        let hasCplaceJSDocs = fs.existsSync(docsPath) && fs.lstatSync(docsPath).isDirectory();
+        if (!hasCplaceJSDocs) {
+            const alternativeDocsPath = path.join(pluginPath, 'src', 'main', 'resources', 'cplaceJS');
+            hasCplaceJSDocs = fs.existsSync(alternativeDocsPath) && fs.lstatSync(alternativeDocsPath).isDirectory();
+        }
+        return hasCplaceJSDocs;
     }
 }
 exports.CplaceJSDocs = CplaceJSDocs;
