@@ -122,8 +122,7 @@ export default class DocsBuilder {
                     docsPath,
                     path.join(this.workingDir, DocsBuilder.allDocsDir, pluginName)
                 );
-            }
-            if (DocsBuilder.canCopyDocs(alternativeDocsPath)) {
+            } else if (DocsBuilder.canCopyDocs(alternativeDocsPath)) {
                 copySync(
                     alternativeDocsPath,
                     path.join(this.workingDir, DocsBuilder.allDocsDir, pluginName)
