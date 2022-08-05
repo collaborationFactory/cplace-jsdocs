@@ -3,7 +3,7 @@ import * as os from 'os';
 import {debug} from '../utils';
 import * as path from 'path';
 import * as fs from 'fs';
-import {existsSync} from 'fs';
+import {existsSync, lstatSync} from 'fs';
 import * as rimraf from 'rimraf';
 import {copySync, ensureDirSync, mkdirpSync, outputFileSync} from 'fs-extra';
 import jsdoc2md from 'jsdoc-to-markdown';
@@ -115,11 +115,24 @@ export default class DocsBuilder {
 
     private copyDocsFromPlugins() {
         this.plugins.forEach((pluginPath, pluginName) => {
-            copySync(
-                path.join(pluginPath, 'assets', 'cplaceJS'),
-                path.join(this.workingDir, DocsBuilder.allDocsDir, pluginName)
-            );
+            const docsPath = path.join(pluginPath, 'assets', 'cplaceJS');
+            const alternativeDocsPath = path.join(pluginPath, 'src', 'main', 'resources', 'cplaceJS');
+            if (DocsBuilder.canCopyDocs(docsPath)) {
+                copySync(
+                    docsPath,
+                    path.join(this.workingDir, DocsBuilder.allDocsDir, pluginName)
+                );
+            } else if (DocsBuilder.canCopyDocs(alternativeDocsPath)) {
+                copySync(
+                    alternativeDocsPath,
+                    path.join(this.workingDir, DocsBuilder.allDocsDir, pluginName)
+                );
+            }
         });
+    }
+
+    private static canCopyDocs(dir): boolean {
+        return (existsSync(dir) && lstatSync(dir).isDirectory());
     }
 
     private static containsJsFiles(dir): boolean {

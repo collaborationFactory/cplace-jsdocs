@@ -57,7 +57,7 @@ class DocsBuilder {
     }
     start() {
         return __awaiter(this, void 0, void 0, function* () {
-            fs_extra_1.ensureDirSync(this.destination);
+            (0, fs_extra_1.ensureDirSync)(this.destination);
             console.log('Collecting docs from plugins...');
             this.copyDocsFromPlugins();
             const docsSource = this.getAllDocsPaths();
@@ -82,16 +82,16 @@ class DocsBuilder {
             return;
         }
         const outputPath = path.join(this.destination, plugin.replace(/\W+/gi, '-').toLowerCase());
-        fs_extra_1.mkdirpSync(outputPath);
-        const pluginFm = tmpl_fromtMatter_1.default(metaData.displayName);
-        fs_extra_1.outputFileSync(path.join(outputPath, '_index.md'), pluginFm);
+        (0, fs_extra_1.mkdirpSync)(outputPath);
+        const pluginFm = (0, tmpl_fromtMatter_1.default)(metaData.displayName);
+        (0, fs_extra_1.outputFileSync)(path.join(outputPath, '_index.md'), pluginFm);
         let docsData = jsdoc_to_markdown_1.default.getTemplateDataSync({
             'no-cache': true,
             files: path.join(jsdocPaths.sourceDir, 'docs', '/**/*.js'),
         });
         // group different types of entities
-        const groups = BuilderUtils_1.groupData(docsData);
-        BuilderUtils_1.generateLinks(plugin, groups);
+        const groups = (0, BuilderUtils_1.groupData)(docsData);
+        (0, BuilderUtils_1.generateLinks)(plugin, groups);
         Object.keys(groups).forEach((group) => {
             // typedefs are handled later
             if (group === 'typedef') {
@@ -100,7 +100,7 @@ class DocsBuilder {
             const templateClosure = DocsBuilder.getTemplateClosure(group);
             for (const entry of groups[group]) {
                 const template = templateClosure(entry);
-                utils_1.debug(`rendering ${entry}`);
+                (0, utils_1.debug)(`rendering ${entry}`);
                 const output = jsdoc_to_markdown_1.default.renderSync({
                     data: docsData,
                     template: template,
@@ -108,7 +108,7 @@ class DocsBuilder {
                 });
                 const filePath = path.resolve(outputPath, `${entry.toLowerCase()}.md`);
                 fs.writeFileSync(filePath, output);
-                utils_1.debug(`Written file:  ${filePath}`);
+                (0, utils_1.debug)(`Written file:  ${filePath}`);
             }
         });
         // do it for global typedefs
@@ -126,11 +126,21 @@ class DocsBuilder {
     }
     copyDocsFromPlugins() {
         this.plugins.forEach((pluginPath, pluginName) => {
-            fs_extra_1.copySync(path.join(pluginPath, 'assets', 'cplaceJS'), path.join(this.workingDir, DocsBuilder.allDocsDir, pluginName));
+            const docsPath = path.join(pluginPath, 'assets', 'cplaceJS');
+            const alternativeDocsPath = path.join(pluginPath, 'src', 'main', 'resources', 'cplaceJS');
+            if (DocsBuilder.canCopyDocs(docsPath)) {
+                (0, fs_extra_1.copySync)(docsPath, path.join(this.workingDir, DocsBuilder.allDocsDir, pluginName));
+            }
+            if (DocsBuilder.canCopyDocs(alternativeDocsPath)) {
+                (0, fs_extra_1.copySync)(alternativeDocsPath, path.join(this.workingDir, DocsBuilder.allDocsDir, pluginName));
+            }
         });
     }
+    static canCopyDocs(dir) {
+        return ((0, fs_1.existsSync)(dir) && (0, fs_1.lstatSync)(dir).isDirectory());
+    }
     static containsJsFiles(dir) {
-        if (!fs_1.existsSync(dir)) {
+        if (!(0, fs_1.existsSync)(dir)) {
             return false;
         }
         const files = fs.readdirSync(dir);
@@ -189,7 +199,7 @@ class DocsBuilder {
         const tmpDir = path.join(osTempDir, 'cplacejs-docs-builder');
         rimraf.sync(tmpDir);
         fs.mkdirSync(tmpDir);
-        utils_1.debug(`Using temp directory ${tmpDir}`);
+        (0, utils_1.debug)(`Using temp directory ${tmpDir}`);
         return tmpDir;
     }
 }
