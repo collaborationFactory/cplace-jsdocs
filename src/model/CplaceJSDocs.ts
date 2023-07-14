@@ -18,6 +18,11 @@ export interface ICplaceJSDocsConfig {
      * Enable debug logging
      */
     debug?: boolean;
+
+    /**
+     * use *.d.ts and typedoc for generating docs instead of *.js / JSDoc
+     */
+    useTypescript?: boolean;
 }
 
 export class CplaceJSDocs {
@@ -32,7 +37,8 @@ export class CplaceJSDocs {
         if(buildConfig.debug) {
             enableDebug();
         }
-        this.plugins = this.setup();
+        this.plugins = this.setup(buildConfig);
+        console.log(`(CplaceJSDocs) Configured for repos ${buildConfig.repos} - useTypescript? ${buildConfig.useTypescript}`)
     }
 
     public async build(): Promise<void> {
@@ -51,15 +57,13 @@ export class CplaceJSDocs {
 
         const startTime = new Date().getTime();
         console.log(`(CplaceJSDocs) Found ${this.plugins.size} plugins with jsdoc: ${Array.from(this.plugins.keys()).join(', ')}`);
-        const docsBuilder = new DocsBuilder(this.plugins, this.buildConfig.destination);
-        docsBuilder.start()
-            .then(() => {
-                const endTime = new Date().getTime();
-                console.log(`CplaceJS docs built successfully (${formatDuration(endTime - startTime)})`)
-            })
+        const docsBuilder = new DocsBuilder(this.plugins, this.buildConfig.destination, !!this.buildConfig.useTypescript);
+        await docsBuilder.start();
+        const endTime = new Date().getTime();
+        console.log(`CplaceJS docs built successfully (${formatDuration(endTime - startTime)})`)
     }
 
-    private setup(): Map<string, string> {
+    private setup(buildConfig: ICplaceJSDocsConfig): Map<string, string> {
         let repoPaths: Set<string>;
         const plugins = new Map<string, string>();
         const mainRepoPath = this.getMainRepoPath();
@@ -77,7 +81,7 @@ export class CplaceJSDocs {
                 const filePath = path.join(repoPath, file);
                 if (fs.lstatSync(filePath).isDirectory()) {
                     const potentialPluginName = path.basename(file);
-                    if (CplaceJSDocs.directoryLooksLikePlugin(filePath) && CplaceJSDocs.pluginHasCplaceJSDocs(filePath)) {
+                    if (CplaceJSDocs.directoryLooksLikePlugin(filePath) && CplaceJSDocs.pluginHasCplaceJSDocs(filePath, buildConfig)) {
                         plugins.set(potentialPluginName, filePath);
                     }
                 }
@@ -125,9 +129,9 @@ export class CplaceJSDocs {
         return fs.existsSync(path.join(pluginPath, 'src'));
     }
 
-    private static pluginHasCplaceJSDocs(pluginPath: string): boolean {
+    private static pluginHasCplaceJSDocs(pluginPath: string, buildConfig: ICplaceJSDocsConfig): boolean {
         const docsPath = path.join(pluginPath, 'assets', 'cplaceJS');
-        let hasCplaceJSDocs = fs.existsSync(docsPath) && fs.lstatSync(docsPath).isDirectory();
+        let hasCplaceJSDocs = fs.existsSync(docsPath) && fs.lstatSync(docsPath).isDirectory() && !buildConfig.useTypescript;
         if (!hasCplaceJSDocs) {
             const alternativeDocsPath = path.join(pluginPath, 'src', 'main', 'resources', 'cplaceJS');
             hasCplaceJSDocs = fs.existsSync(alternativeDocsPath) && fs.lstatSync(alternativeDocsPath).isDirectory();

@@ -9,7 +9,7 @@ const CplaceJSDocs_1 = require("./model/CplaceJSDocs");
 const utils_1 = require("./utils");
 run();
 function run() {
-    const cli = meow_1.default(`
+    const cli = (0, meow_1.default)(`
     Usage:
         $ cplacejs-docs
         
@@ -56,14 +56,14 @@ function run() {
         }
     });
     if (cli.flags.verbose) {
-        utils_1.enableDebug();
-        utils_1.debug('Debugging enabled...');
+        (0, utils_1.enableDebug)();
+        (0, utils_1.debug)('Debugging enabled...');
     }
     if (cli.flags.repos != null && !cli.flags.repos) {
-        utils_1.debug('No repos specified. Using all available repos');
+        (0, utils_1.debug)('No repos specified. Using all available repos');
     }
     if (cli.flags.out != null && !cli.flags.out) {
-        utils_1.debug('No output path provided. Using default path');
+        (0, utils_1.debug)('No output path provided. Using default path');
     }
     const config = {
         repos: cli.flags.repos,
@@ -72,7 +72,7 @@ function run() {
     try {
         const docsBuilder = new CplaceJSDocs_1.CplaceJSDocs(config);
         process.on('SIGTERM', () => {
-            utils_1.debug('Shutting down...');
+            (0, utils_1.debug)('Shutting down...');
         });
         // Timeout to ensure flush of stdout
         docsBuilder.build().then(() => {
@@ -83,6 +83,6 @@ function run() {
     }
     catch (err) {
         console.log(err);
-        console.error(utils_1.cerr `Failed to build docs: ${err.message}`);
+        console.error((0, utils_1.cerr) `Failed to build docs: ${err.message}`);
     }
 }
