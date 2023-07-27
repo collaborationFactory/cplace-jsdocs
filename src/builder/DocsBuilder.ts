@@ -3,7 +3,7 @@ import * as os from 'os';
 import {debug} from '../utils';
 import * as path from 'path';
 import * as fs from 'fs';
-import {existsSync, lstatSync} from 'fs';
+import {existsSync, lstatSync, readdirSync, readFileSync, writeFileSync} from 'fs';
 import * as rimraf from 'rimraf';
 import {copySync, ensureDirSync, mkdirpSync, outputFileSync} from 'fs-extra';
 import jsdoc2md from 'jsdoc-to-markdown';
@@ -14,6 +14,7 @@ import frontMatterTemplate from "../dmd-ext/templates/tmpl-fromtMatter";
 import {generateLinks, groupData} from './BuilderUtils';
 import '../dmd-ext/helper/helpers'
 import {PluginMetaData} from "./constants";
+import {resolve} from "path";
 
 interface JsdocPaths {
     sourceDir: string;
@@ -40,13 +41,18 @@ export default class DocsBuilder {
         this.copyDocsFromPlugins();
         const docsSource = this.getAllDocsPaths();
 
+        let displayNameToPluginMap = new Map<string, string>();
+
         Object.keys(docsSource).forEach((plugin) => {
             const pathsForJsdoc: JsdocPaths = {
                 cplacePlugin: plugin,
                 sourceDir: docsSource[plugin],
                 jsdocPlugin: require.resolve('../lib/cplaceJsdocPlugin'),
             };
-            this.buildForPlugin(plugin, pathsForJsdoc);
+            let metaData = this.buildForPlugin(plugin, pathsForJsdoc);
+            if (!!metaData) {
+                displayNameToPluginMap.set(metaData.displayName.replace(/ /g, '_'), plugin.replace(/\./g, '-'));
+            }
         });
 
         if (this.useTypescript) {
@@ -55,6 +61,7 @@ export default class DocsBuilder {
             let docsSourcePath = path.join(this.workingDir, DocsBuilder.allDocsDir);
             await this.buildTypedoc(docsSourcePath, this.destination);
             console.log('Finished building docs using typedoc');
+            this.addAliases(this.destination, displayNameToPluginMap);
         }
     }
 
@@ -130,18 +137,52 @@ export default class DocsBuilder {
         }
         process.chdir(currentDir);
         console.log(`Changed cwd back to ${process.cwd()}`);
+    }
+
+    addAliases(directory: string, displayNameToPluginMap: Map<string, string>): void {
+        console.log(`Adding aliases to *.md files in ${directory}`);
+        readdirSync(directory).forEach((fileName) => {
+            const filePath = resolve(directory, fileName);
+            // _index.ts file should stay intact
+            if (lstatSync(filePath).isFile() && fileName !== '_index.md' && fileName !== 'modules.md' && fileName.endsWith('.md')) {
+                this.addAliasInFile(filePath, fileName, displayNameToPluginMap);
+            } else if (lstatSync(filePath).isDirectory()) {
+                this.addAliases(filePath, displayNameToPluginMap);
+            }
+        });
      }
 
-    buildForPlugin(plugin: string, jsdocPaths: JsdocPaths) {
+    addAliasInFile(filePath: string, fileName: string, displayNameToPluginMap: Map<string, string>): void {
+        let fileContent = readFileSync(filePath, {
+            encoding: 'utf8',
+        }).toString();
+
+        let fileNameParts = fileName.split('.');
+        let displayNamePart = fileNameParts[0];
+        let mappedModuleName = displayNameToPluginMap.get(displayNamePart);
+        if (!mappedModuleName) {
+            return;
+        }
+        let alias = '../'+mappedModuleName;
+        if (fileNameParts.length > 2) {
+            let detailName = fileNameParts[1].toLowerCase();
+            alias = alias + '/' + detailName;
+        }
+
+        fileContent = fileContent.replace(/^---/, `---\naliases:\n- ${alias}`);
+        writeFileSync(filePath, fileContent);
+    }
+
+    buildForPlugin(plugin: string, jsdocPaths: JsdocPaths): PluginMetaData | undefined {
         // if plugin does not contain any js files return
         if (!this.containsLowCodeDocFiles(path.join(jsdocPaths.sourceDir, 'docs'))) {
-            return;
+            return undefined;
         }
 
         let metaData: PluginMetaData = DocsBuilder.getMetaData(jsdocPaths.sourceDir, plugin);
         if (!metaData.displayName) {
             console.error(`(CplaceJSDocs) Incorrect meta data cannot build docs for ${plugin}`);
-            return;
+            return undefined;
         }
 
         if (!this.useTypescript) {
@@ -196,6 +237,7 @@ export default class DocsBuilder {
         } else {
             this.concatenateTypescriptDefinitions(path.resolve(jsdocPaths.sourceDir, 'docs'), metaData.displayName, ['globals.d.ts', 'cplace-extension.d.ts']);
         }
+        return metaData;
     }
 
     private concatenateTypescriptDefinitions(pluginDocsPath: string, pluginName: string, excludeFiles: string[]): string {

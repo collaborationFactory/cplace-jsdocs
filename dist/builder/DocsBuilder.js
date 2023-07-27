@@ -50,6 +50,7 @@ const tmpl_typedef_1 = __importDefault(require("../dmd-ext/templates/tmpl-typede
 const tmpl_fromtMatter_1 = __importDefault(require("../dmd-ext/templates/tmpl-fromtMatter"));
 const BuilderUtils_1 = require("./BuilderUtils");
 require("../dmd-ext/helper/helpers");
+const path_1 = require("path");
 class DocsBuilder {
     constructor(plugins, destination, useTypescript) {
         this.plugins = plugins;
@@ -66,13 +67,17 @@ class DocsBuilder {
             console.log(`Collecting docs from plugins... (useTypescript: ${this.useTypescript})`);
             this.copyDocsFromPlugins();
             const docsSource = this.getAllDocsPaths();
+            let displayNameToPluginMap = new Map();
             Object.keys(docsSource).forEach((plugin) => {
                 const pathsForJsdoc = {
                     cplacePlugin: plugin,
                     sourceDir: docsSource[plugin],
                     jsdocPlugin: require.resolve('../lib/cplaceJsdocPlugin'),
                 };
-                this.buildForPlugin(plugin, pathsForJsdoc);
+                let metaData = this.buildForPlugin(plugin, pathsForJsdoc);
+                if (!!metaData) {
+                    displayNameToPluginMap.set(metaData.displayName.replace(/ /g, '_'), plugin.replace(/\./g, '-'));
+                }
             });
             if (this.useTypescript) {
                 // Need to build the docs all in one go, buildForPlugin only prepares the data in the case using typescript
@@ -80,6 +85,7 @@ class DocsBuilder {
                 let docsSourcePath = path.join(this.workingDir, DocsBuilder.allDocsDir);
                 yield this.buildTypedoc(docsSourcePath, this.destination);
                 console.log('Finished building docs using typedoc');
+                this.addAliases(this.destination, displayNameToPluginMap);
             }
         });
     }
@@ -146,15 +152,46 @@ class DocsBuilder {
             console.log(`Changed cwd back to ${process.cwd()}`);
         });
     }
+    addAliases(directory, displayNameToPluginMap) {
+        console.log(`Adding aliases to *.md files in ${directory}`);
+        (0, fs_1.readdirSync)(directory).forEach((fileName) => {
+            const filePath = (0, path_1.resolve)(directory, fileName);
+            // _index.ts file should stay intact
+            if ((0, fs_1.lstatSync)(filePath).isFile() && fileName !== '_index.md' && fileName !== 'modules.md' && fileName.endsWith('.md')) {
+                this.addAliasInFile(filePath, fileName, displayNameToPluginMap);
+            }
+            else if ((0, fs_1.lstatSync)(filePath).isDirectory()) {
+                this.addAliases(filePath, displayNameToPluginMap);
+            }
+        });
+    }
+    addAliasInFile(filePath, fileName, displayNameToPluginMap) {
+        let fileContent = (0, fs_1.readFileSync)(filePath, {
+            encoding: 'utf8',
+        }).toString();
+        let fileNameParts = fileName.split('.');
+        let displayNamePart = fileNameParts[0];
+        let mappedModuleName = displayNameToPluginMap.get(displayNamePart);
+        if (!mappedModuleName) {
+            return;
+        }
+        let alias = '../' + mappedModuleName;
+        if (fileNameParts.length > 2) {
+            let detailName = fileNameParts[1].toLowerCase();
+            alias = alias + '/' + detailName;
+        }
+        fileContent = fileContent.replace(/^---/, `---\naliases:\n- ${alias}`);
+        (0, fs_1.writeFileSync)(filePath, fileContent);
+    }
     buildForPlugin(plugin, jsdocPaths) {
         // if plugin does not contain any js files return
         if (!this.containsLowCodeDocFiles(path.join(jsdocPaths.sourceDir, 'docs'))) {
-            return;
+            return undefined;
         }
         let metaData = DocsBuilder.getMetaData(jsdocPaths.sourceDir, plugin);
         if (!metaData.displayName) {
             console.error(`(CplaceJSDocs) Incorrect meta data cannot build docs for ${plugin}`);
-            return;
+            return undefined;
         }
         if (!this.useTypescript) {
             const outputPath = path.join(this.destination, plugin.replace(/\W+/gi, '-').toLowerCase());
@@ -203,6 +240,7 @@ class DocsBuilder {
         else {
             this.concatenateTypescriptDefinitions(path.resolve(jsdocPaths.sourceDir, 'docs'), metaData.displayName, ['globals.d.ts', 'cplace-extension.d.ts']);
         }
+        return metaData;
     }
     concatenateTypescriptDefinitions(pluginDocsPath, pluginName, excludeFiles) {
         let outputFile = path.resolve(pluginDocsPath, '..', '..', pluginName + '.d.ts');

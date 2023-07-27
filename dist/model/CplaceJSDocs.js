@@ -101,7 +101,7 @@ class CplaceJSDocs {
             const files = fs.readdirSync(containingDir);
             files.forEach(file => {
                 const filePath = path.join(containingDir, file);
-                if (fs.lstatSync(filePath).isDirectory()) {
+                if (fs.lstatSync(filePath).isDirectory() || fs.lstatSync(filePath).isSymbolicLink()) {
                     repos.add(filePath);
                 }
             });
