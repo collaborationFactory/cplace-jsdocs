@@ -79,7 +79,7 @@ export class CplaceJSDocs {
             const files = fs.readdirSync(repoPath);
             files.forEach(file => {
                 const filePath = path.join(repoPath, file);
-                if (fs.lstatSync(filePath).isDirectory()) {
+                if (fs.lstatSync(filePath).isDirectory() || fs.lstatSync(filePath).isSymbolicLink()) {
                     const potentialPluginName = path.basename(file);
                     if (CplaceJSDocs.directoryLooksLikePlugin(filePath) && CplaceJSDocs.pluginHasCplaceJSDocs(filePath, buildConfig)) {
                         plugins.set(potentialPluginName, filePath);

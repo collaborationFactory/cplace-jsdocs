@@ -76,7 +76,7 @@ class DocsBuilder {
                 };
                 let metaData = this.buildForPlugin(plugin, pathsForJsdoc);
                 if (!!metaData) {
-                    displayNameToPluginMap.set(metaData.displayName.replace(/ /g, '_'), plugin.replace(/\./g, '-'));
+                    displayNameToPluginMap.set(metaData.displayName, plugin.replace(/\./g, '-').toLowerCase());
                 }
             });
             if (this.useTypescript) {
@@ -85,7 +85,8 @@ class DocsBuilder {
                 let docsSourcePath = path.join(this.workingDir, DocsBuilder.allDocsDir);
                 yield this.buildTypedoc(docsSourcePath, this.destination);
                 console.log('Finished building docs using typedoc');
-                this.addAliases(this.destination, displayNameToPluginMap);
+                this.removeUnderscoresFromFilenames(this.destination);
+                this.addAliasesAndFixLinks(this.destination, displayNameToPluginMap);
             }
         });
     }
@@ -152,36 +153,61 @@ class DocsBuilder {
             console.log(`Changed cwd back to ${process.cwd()}`);
         });
     }
-    addAliases(directory, displayNameToPluginMap) {
-        console.log(`Adding aliases to *.md files in ${directory}`);
+    addAliasesAndFixLinks(directory, displayNameToPluginMap) {
+        console.log(`Adding aliases to *.md files in ${directory} and fix underscores in module names`);
         (0, fs_1.readdirSync)(directory).forEach((fileName) => {
             const filePath = (0, path_1.resolve)(directory, fileName);
             // _index.ts file should stay intact
-            if ((0, fs_1.lstatSync)(filePath).isFile() && fileName !== '_index.md' && fileName !== 'modules.md' && fileName.endsWith('.md')) {
-                this.addAliasInFile(filePath, fileName, displayNameToPluginMap);
+            if ((0, fs_1.lstatSync)(filePath).isFile() && fileName !== '_index.md' && fileName.endsWith('.md')) {
+                this.addAliasInFileAndFixLinks(filePath, fileName, displayNameToPluginMap);
             }
             else if ((0, fs_1.lstatSync)(filePath).isDirectory()) {
-                this.addAliases(filePath, displayNameToPluginMap);
+                this.addAliasesAndFixLinks(filePath, displayNameToPluginMap);
             }
         });
     }
-    addAliasInFile(filePath, fileName, displayNameToPluginMap) {
+    addAliasInFileAndFixLinks(filePath, fileName, displayNameToPluginMap) {
         let fileContent = (0, fs_1.readFileSync)(filePath, {
             encoding: 'utf8',
         }).toString();
         let fileNameParts = fileName.split('.');
         let displayNamePart = fileNameParts[0];
-        let mappedModuleName = displayNameToPluginMap.get(displayNamePart);
-        if (!mappedModuleName) {
-            return;
+        let mappedDisplayNamePart = displayNamePart.replace(/ /g, '_'); // Originally the file had underscores instead of blanks
+        let mappedModuleName = displayNameToPluginMap.get(mappedDisplayNamePart);
+        if (!!mappedModuleName) {
+            let alias = '../' + mappedModuleName;
+            if (fileNameParts.length > 2) {
+                let detailName = fileNameParts[1].toLowerCase();
+                alias = alias + '/' + detailName;
+                console.log(`Adding alias to file ${filePath}: ${alias}`);
+            }
+            fileContent = fileContent.replace(/^---/, `---\naliases:\n- ${alias}`);
         }
-        let alias = '../' + mappedModuleName;
-        if (fileNameParts.length > 2) {
-            let detailName = fileNameParts[1].toLowerCase();
-            alias = alias + '/' + detailName;
-        }
-        fileContent = fileContent.replace(/^---/, `---\naliases:\n- ${alias}`);
+        console.log(`Adjusting underscores in module names in file ${filePath}`);
+        // Now replace all occurences of all module names (i.e. all the ones with underscore) with one containing
+        // blanks instead (so that we display e.g. "Office reports" instead of "Office_reports" everywhere
+        displayNameToPluginMap.forEach((value, displayNameWithUnderscore, map) => {
+            let displayNameWithoutUnderscore = displayNameWithUnderscore.replace(/_/g, ' ');
+            let displayNameWithEscapedUnderscore = displayNameWithUnderscore.replace(/_/g, '\\\\_');
+            fileContent = fileContent.replace(new RegExp(displayNameWithUnderscore, 'g'), displayNameWithoutUnderscore);
+            fileContent = fileContent.replace(new RegExp(displayNameWithEscapedUnderscore, 'g'), displayNameWithoutUnderscore);
+        });
         (0, fs_1.writeFileSync)(filePath, fileContent);
+    }
+    removeUnderscoresFromFilenames(directory) {
+        console.log(`Removing underscores from filenames is directory ${directory}`);
+        (0, fs_1.readdirSync)(directory).forEach((fileName) => {
+            const filePath = (0, path_1.resolve)(directory, fileName);
+            // _index.ts file should stay intact
+            if ((0, fs_1.lstatSync)(filePath).isFile() && fileName !== '_index.md' && fileName.endsWith('.md')) {
+                let newFilename = fileName.replace(/_/g, ' ');
+                let newFilepath = (0, path_1.resolve)(directory, newFilename);
+                fs.renameSync(filePath, newFilepath);
+            }
+            else if ((0, fs_1.lstatSync)(filePath).isDirectory()) {
+                this.removeUnderscoresFromFilenames(filePath);
+            }
+        });
     }
     buildForPlugin(plugin, jsdocPaths) {
         // if plugin does not contain any js files return
@@ -238,13 +264,14 @@ class DocsBuilder {
             console.log('Docs generated in folder: ' + outputPath);
         }
         else {
+            metaData.displayName = metaData.displayName.replace(/ /g, '_');
             this.concatenateTypescriptDefinitions(path.resolve(jsdocPaths.sourceDir, 'docs'), metaData.displayName, ['globals.d.ts', 'cplace-extension.d.ts']);
         }
         return metaData;
     }
     concatenateTypescriptDefinitions(pluginDocsPath, pluginName, excludeFiles) {
         let outputFile = path.resolve(pluginDocsPath, '..', '..', pluginName + '.d.ts');
-        console.log(`Concatenating *.d.ts files for plugin ${pluginName} to file ${outputFile} - excluded files are: ${excludeFiles}.`);
+        console.log(`Concatenating *.d.ts files from directory ${pluginDocsPath} for plugin ${pluginName} to file ${outputFile} - excluded files are: ${excludeFiles}.`);
         let files = fs.readdirSync(pluginDocsPath);
         files.forEach(file => {
             let absoluteFile = path.resolve(pluginDocsPath, file);
