@@ -1,6 +1,6 @@
 {
     "name": "cplace-jsdocs",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "description": "Build tool for cplaceJS docs",
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1",
@@ -42,6 +42,10 @@
         "jsdoc-to-markdown": ">=7.0.0",
         "meow": "^5.0.0",
         "minimist": "^1.2.0",
-        "rimraf": "^3.0.0"
+        "rimraf": "^3.0.0",
+        "typedoc": ">=0.24.8",
+        "typedoc-hugo-theme": ">=1.0.0",
+        "typedoc-plugin-markdown": ">=3.6.0",
+        "cplace-typedoc-hugo-plugin": ">=1.0.4"
     }
 }

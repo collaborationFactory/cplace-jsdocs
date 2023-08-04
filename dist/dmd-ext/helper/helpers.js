@@ -58,7 +58,7 @@ function _link(input, options) {
         return null;
     // custom link resolver - start
     // we short circuit the resolution. if the input refers to any of our classes then we generate the link
-    let resolvedLink = BuilderUtils_1.resolveDocsLinks(input, options);
+    let resolvedLink = (0, BuilderUtils_1.resolveDocsLinks)(input, options);
     if (resolvedLink) {
         return resolvedLink;
     }

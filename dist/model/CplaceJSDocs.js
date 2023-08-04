@@ -1,7 +1,11 @@
 "use strict";
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
 }) : (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     o[k2] = m[k];
@@ -43,7 +47,8 @@ class CplaceJSDocs {
         if (buildConfig.debug) {
             (0, utils_1.enableDebug)();
         }
-        this.plugins = this.setup();
+        this.plugins = this.setup(buildConfig);
+        console.log(`(CplaceJSDocs) Configured for repos ${buildConfig.repos} - useTypescript? ${buildConfig.useTypescript}`);
     }
     build() {
         return __awaiter(this, void 0, void 0, function* () {
@@ -58,15 +63,13 @@ class CplaceJSDocs {
             }
             const startTime = new Date().getTime();
             console.log(`(CplaceJSDocs) Found ${this.plugins.size} plugins with jsdoc: ${Array.from(this.plugins.keys()).join(', ')}`);
-            const docsBuilder = new DocsBuilder_1.default(this.plugins, this.buildConfig.destination);
-            docsBuilder.start()
-                .then(() => {
-                const endTime = new Date().getTime();
-                console.log(`CplaceJS docs built successfully (${(0, formatting_1.formatDuration)(endTime - startTime)})`);
-            });
+            const docsBuilder = new DocsBuilder_1.default(this.plugins, this.buildConfig.destination, !!this.buildConfig.useTypescript);
+            yield docsBuilder.start();
+            const endTime = new Date().getTime();
+            console.log(`CplaceJS docs built successfully (${(0, formatting_1.formatDuration)(endTime - startTime)})`);
         });
     }
-    setup() {
+    setup(buildConfig) {
         let repoPaths;
         const plugins = new Map();
         const mainRepoPath = this.getMainRepoPath();
@@ -80,9 +83,9 @@ class CplaceJSDocs {
             const files = fs.readdirSync(repoPath);
             files.forEach(file => {
                 const filePath = path.join(repoPath, file);
-                if (fs.lstatSync(filePath).isDirectory()) {
+                if (fs.lstatSync(filePath).isDirectory() || fs.lstatSync(filePath).isSymbolicLink()) {
                     const potentialPluginName = path.basename(file);
-                    if (CplaceJSDocs.directoryLooksLikePlugin(filePath) && CplaceJSDocs.pluginHasCplaceJSDocs(filePath)) {
+                    if (CplaceJSDocs.directoryLooksLikePlugin(filePath) && CplaceJSDocs.pluginHasCplaceJSDocs(filePath, buildConfig)) {
                         plugins.set(potentialPluginName, filePath);
                     }
                 }
@@ -98,7 +101,7 @@ class CplaceJSDocs {
             const files = fs.readdirSync(containingDir);
             files.forEach(file => {
                 const filePath = path.join(containingDir, file);
-                if (fs.lstatSync(filePath).isDirectory()) {
+                if (fs.lstatSync(filePath).isDirectory() || fs.lstatSync(filePath).isSymbolicLink()) {
                     repos.add(filePath);
                 }
             });
@@ -123,9 +126,9 @@ class CplaceJSDocs {
     static directoryLooksLikePlugin(pluginPath) {
         return fs.existsSync(path.join(pluginPath, 'src'));
     }
-    static pluginHasCplaceJSDocs(pluginPath) {
+    static pluginHasCplaceJSDocs(pluginPath, buildConfig) {
         const docsPath = path.join(pluginPath, 'assets', 'cplaceJS');
-        let hasCplaceJSDocs = fs.existsSync(docsPath) && fs.lstatSync(docsPath).isDirectory();
+        let hasCplaceJSDocs = fs.existsSync(docsPath) && fs.lstatSync(docsPath).isDirectory() && !buildConfig.useTypescript;
         if (!hasCplaceJSDocs) {
             const alternativeDocsPath = path.join(pluginPath, 'src', 'main', 'resources', 'cplaceJS');
             hasCplaceJSDocs = fs.existsSync(alternativeDocsPath) && fs.lstatSync(alternativeDocsPath).isDirectory();

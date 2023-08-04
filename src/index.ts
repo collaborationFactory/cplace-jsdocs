@@ -85,7 +85,7 @@ function run() {
         }, () => {
             setTimeout(() => process.exit(1), 200);
         });
-    } catch (err) {
+    } catch (err: any) {
         console.log(err);
         console.error(cerr`Failed to build docs: ${err.message}`);
     }
